@@ -13,7 +13,7 @@ st.markdown("### 🏭 뭐든지 다해! **주조!** – 공정을 알고, 불량
 
 st.title('뭐든지 다해! 주조!')
 st.subheader('공정을 알고, 불량을 잡다')
-
+st.write("이 대시보드는 무엇이든 다 해줍니다.")
 
 st.markdown("### 📂 페이지 바로가기")
 col1, col2 = st.columns(2)

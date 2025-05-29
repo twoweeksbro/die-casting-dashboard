@@ -31,23 +31,63 @@ st.session_state.setdefault("current_idx", 100)
 st.session_state.setdefault("is_running", False)
 st.session_state.is_running = True  # 시작 기본값
 
+
+
+
+
+
+
+
 # 버튼 인터페이스
 col1, col2, col3 = st.columns(3)
 with col1:
-    if st.button("▶️ 시작"):
+    if st.button("시작"):
         st.session_state.is_running = True
 with col2:
-    if st.button("⏹️ 멈춤"):
+    if st.button("멈춤"):
         st.session_state.is_running = False
 with col3:
-    if st.button("🔄 초기화"):
+    if st.button("초기화"):
         st.session_state["current_idx"] = 100
         st.session_state["is_running"] = False
 
 
 
+def render_status_box(title, value):
+        if value == 1:
+            # color = "#FF4B4B"  # 불량 - 빨강
+            # color = "#F28B82"  # 불량 - 빨강
+            color = "#E57373"  # 불량 - 빨강
+            label = "불량"
+        else:
+            # color = "#4CAF50"  # 정상 - 초록
+            # color = "#A5D6A7"  # 정상 - 초록
+            color = "#81C784"  # 정상 - 초록
+            label = "정상"
+
+        html_code = f"""
+        <div style="
+            background-color:{color};
+            padding:1rem;
+            border-radius:10px;
+            color:white;
+            font-weight:bold;
+            text-align:center;
+            font-size:1.2rem;
+            ">
+            <div style="font-size:0.9rem;">{title}</div>
+            <div>{label}</div>
+        </div>
+        """
+        st.markdown(html_code, unsafe_allow_html=True)
+
+
 # KPI 렌더링
 def render_dashboard(current_df):
+    
+    
+
+    
     st.subheader("실시간 KPI")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("총 생산량", len(current_df))
@@ -62,9 +102,20 @@ def render_dashboard(current_df):
     y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
     y_proba = model.predict_proba(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0][1]
 
-    col1.metric("예측 결과", y_pred)
-    col2.metric("불량 확률", y_proba)
-    col3.metric("실제 결과", current_df.iloc[-1]['passorfail'])
+    # col1.metric("예측 결과", y_pred)
+    # col2.metric("불량 확률", y_proba)
+    # col3.metric("실제 결과", current_df.iloc[-1]['passorfail'])
+    with col1:
+        render_status_box("예측 결과", y_pred)
+
+    with col2:
+        st.metric("불량 확률", f"{y_proba:.2f}")
+
+    with col3:
+        render_status_box("실제 결과", current_df.iloc[-1]['passorfail'])
+    
+    
+    
 
 # 시계열 그래프 렌더링
 def render_time_series(current_df, selected_vars):
@@ -76,8 +127,8 @@ def render_time_series(current_df, selected_vars):
 
 # 불량 테이블 렌더링
 def render_defect_table(current_df):
-    if not current_df.empty and current_df["passorfail"].iloc[-1] == 1:
-        st.warning("불량 발생: 최근 데이터에서 불량이 탐지되었습니다.")
+    # if not current_df.empty and current_df["passorfail"].iloc[-1] == 1:
+    #     st.warning("불량 발생: 최근 데이터에서 불량이 탐지되었습니다.")
     st.subheader("🚨 최근 불량 기록")
     st.dataframe(current_df[current_df["passorfail"] == 1].tail(5), use_container_width=True)
 
