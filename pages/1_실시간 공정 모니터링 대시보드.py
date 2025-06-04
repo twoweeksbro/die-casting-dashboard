@@ -4,6 +4,8 @@ import plotly.express as px
 import time
 from datetime import datetime
 import pickle
+import plotly.graph_objects as go
+import shap
 
 st.set_page_config("실시간 주조 공정 시뮬레이션", layout="wide")
 st.title("실시간 주조 공정 모니터링 대시보드")
@@ -29,9 +31,7 @@ model = load_model()
 # Session State 초기화
 st.session_state.setdefault("current_idx", 100)
 st.session_state.setdefault("is_running", False)
-st.session_state.is_running = True  # 시작 기본값
-
-
+st.session_state.is_running = False  # 시작 기본값
 
 
 
@@ -85,19 +85,21 @@ def render_status_box(title, value):
 # KPI 렌더링
 def render_dashboard(current_df):
     
-    
-
-    
     st.subheader("실시간 KPI")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("총 생산량", len(current_df))
-    col2.metric("정상 개수", (current_df["passorfail"] == 0).sum())
-    col3.metric("불량 개수", (current_df["passorfail"] == 1).sum())
-    col4.metric("불량률", f"{(current_df['passorfail'].mean() * 100):.2f}%")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.metric("총 생산량", len(current_df), border=True)
+    col2.metric("정상 개수", (current_df["passorfail"] == 0).sum(), border=True)
+    col3.metric("불량 개수", (current_df["passorfail"] == 1).sum(), border=True)
+    col4.metric("불량률", f"{(current_df['passorfail'].mean() * 100):.2f}%", border=True)
+    col5.metric("연속 정상 개수", 32, border=True)
 
     st.divider()
     st.subheader('불량 예측')
+    
+
+    
     col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
     y_proba = model.predict_proba(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0][1]
@@ -105,6 +107,7 @@ def render_dashboard(current_df):
     # col1.metric("예측 결과", y_pred)
     # col2.metric("불량 확률", y_proba)
     # col3.metric("실제 결과", current_df.iloc[-1]['passorfail'])
+    
     with col1:
         render_status_box("예측 결과", y_pred)
 
@@ -113,6 +116,53 @@ def render_dashboard(current_df):
 
     with col3:
         render_status_box("실제 결과", current_df.iloc[-1]['passorfail'])
+    
+    with col4:
+         # 게이지 차트로 불량 확률 시각화
+        # fig = go.Figure(go.Indicator(
+        #     mode="gauge+number",
+        #     value=y_proba * 100,
+        #     title={'text': "예측 불량 확률 (%)"},
+        #     gauge={
+        #         'axis': {'range': [0, 100]},
+        #         'bar': {'color': "red"},
+        #         'steps': [
+        #             {'range': [0, 30], 'color': "lightgreen"},
+        #             {'range': [30, 70], 'color': "yellow"},
+        #             {'range': [70, 100], 'color': "red"}
+        #         ],
+        #     }
+        # ))
+        # st.plotly_chart(fig, use_container_width=True)
+
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=y_proba * 100,
+            number={'font': {'color': '#31333F'}},
+            title={'text': "예측 불량 확률 (%)", 'font': {'color': '#31333F'}},
+            gauge={
+                'axis': {'range': [0, 100], 'tickcolor': '#31333F'},
+                'bar': {'color': "#FF4B4B"},
+                'bgcolor': "#F0F2F6",  # secondary background
+                'borderwidth': 2,
+                'bordercolor': "#E0E0E0",
+                'steps': [
+                    {'range': [0, 30], 'color': "#DFF5E3"},      # 낮음 - 옅은 초록
+                    {'range': [30, 70], 'color': "#FFEAA7"},     # 중간 - 노랑
+                    {'range': [70, 100], 'color': "#FFCCCC"}     # 높음 - 옅은 빨강
+                ],
+            }
+        ))
+
+        fig.update_layout(
+            height=250,
+            margin=dict(t=20, b=0, l=0, r=0),
+            paper_bgcolor="#FFFFFF",  # 배경색
+            font=dict(color="#31333F")  # 텍스트 컬러
+        )
+
+        st.plotly_chart(fig, use_container_width=True, key=f"defect_gauge{st.session_state.current_idx}")
+            
     
     
     
@@ -135,6 +185,8 @@ def render_defect_table(current_df):
 # Placeholder 구역 분리
 kpi_placeholder = st.empty()
 
+
+
 st.divider()
 st.subheader("주요 변수 시계열")
 
@@ -156,8 +208,9 @@ if selected_vars:
             current_df = df.iloc[:st.session_state.current_idx]
 
             if not current_df.empty and current_df["passorfail"].iloc[-1] == 1:
+                # st.error("🚨 불량 발생! 즉시 점검 요망!")
                 st.toast("불량 발생: 최근 데이터에서 불량이 탐지되었습니다!")
-                st.balloons()
+                # st.balloons()
 
             with kpi_placeholder.container():
                 render_dashboard(current_df)
