@@ -8,6 +8,7 @@ train_df.info()
 
 
 
+
 train_df.select_dtypes('number')
 
 import matplotlib.pyplot as plt

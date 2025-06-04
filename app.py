@@ -2,14 +2,14 @@ import streamlit as st
 
 st.set_page_config(
     page_title="주조 공정 데이터 기반 모델 모니터링 대시보드",
-    page_icon="🏭",
+    page_icon="",
     layout='wide'
 )
 
 # st.set_page_config(page_title="실시간 주조 공정 모니터링", page_icon="⏱️", layout="wide")
 
 
-st.markdown("### 🏭 뭐든지 다해! **주조!** – 공정을 알고, 불량을 잡다.")
+st.markdown("### 뭐든지 다해! **주조!** – 공정을 알고, 불량을 잡다.")
 
 st.title('뭐든지 다해! 주조!')
 st.subheader('공정을 알고, 불량을 잡다')
