@@ -39,7 +39,7 @@ model = load_model()
 
 
 # Session State 초기화
-st.session_state.setdefault("current_idx", 100)
+st.session_state.setdefault("current_idx", 1000)
 st.session_state.setdefault("is_running", False)
 st.session_state.is_running = False  # 시작 기본값
 
@@ -178,12 +178,106 @@ def render_dashboard(current_df):
     
 
 # 시계열 그래프 렌더링
+# def render_time_series(current_df, selected_vars):
+#     cols = st.columns(2)
+#     for i, var in enumerate(selected_vars):
+#         with cols[i % 2]:
+#             fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color='mold_code')
+#             st.plotly_chart(fig, use_container_width=True)
+
+# 시계열 그래프 렌더링 (몰드 코드별 탭 추가)
+# def render_time_series(current_df, selected_vars):
+#     mold_codes = current_df["mold_code"].unique()
+
+#     tabs = st.tabs([f"몰드 {code}" for code in mold_codes])
+
+#     for tab, code in zip(tabs, mold_codes):
+#         with tab:
+#             st.markdown(f"### 몰드 코드: `{code}`")
+#             filtered_df = current_df[current_df["mold_code"] == code]
+
+#             cols = st.columns(2)
+#             for i, var in enumerate(selected_vars):
+#                 with cols[i % 2]:
+#                     fig = px.line(
+#                         filtered_df.tail(50),
+#                         x="datetime",
+#                         y=var,
+#                         title=var,
+#                         color_discrete_sequence=["#FF4B4B"]
+#                     )
+#                     unique_key = f"{code}_{var}"
+#                     st.plotly_chart(fig, use_container_width=True, key=unique_key)
+
+
+# def render_time_series(current_df, selected_vars):
+#     st.subheader("몰드 코드별 주요 변수 시계열")
+
+#     mold_codes = df["mold_code"].unique()
+#     tab_labels = [f"몰드 코드 {code}" for code in mold_codes]
+#     tab_objects = st.tabs(tab_labels)  # <- 수정 포인트
+
+
+    
+#     for code, tab in zip(mold_codes, tab_objects):
+#         with tab:
+#             st.markdown(f"**몰드 코드 {code}**에 대한 최근 시계열 데이터")
+#             filtered_df = current_df[current_df["mold_code"] == code]
+
+#             if filtered_df.empty:
+#                 st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
+#                 continue
+
+#             cols = st.columns(2)
+#             for i, var in enumerate(selected_vars):
+#                 with cols[i % 2]:
+#                     fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var)
+#                     unique_key = f"{code}_{var}_{i}_{st.session_state.current_idx}"
+#                     st.plotly_chart(fig, use_container_width=True,key=unique_key)
+
+
 def render_time_series(current_df, selected_vars):
-    cols = st.columns(2)
-    for i, var in enumerate(selected_vars):
-        with cols[i % 2]:
-            fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color='mold_code')
-            st.plotly_chart(fig, use_container_width=True)
+    st.subheader("몰드 코드별 주요 변수 시계열")
+
+    mold_codes = df["mold_code"].unique()
+    tab_labels = ["전체"] + [f"몰드 코드 {code}" for code in mold_codes]
+    tab_objects = st.tabs(tab_labels)
+
+    # 전체 탭
+    with tab_objects[0]:
+        st.markdown("**전체 몰드 코드**의 최근 시계열 데이터")
+        cols = st.columns(2)
+        for i, var in enumerate(selected_vars):
+            with cols[i % 2]:
+                fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color="mold_code")
+                unique_key = f"전체_{var}_{i}_{st.session_state.current_idx}"
+                st.plotly_chart(fig, use_container_width=True, key=unique_key)
+
+    # 개별 몰드 코드 탭
+    for idx, (code, tab) in enumerate(zip(mold_codes, tab_objects[1:])):
+        with tab:
+            st.markdown(f"**몰드 코드 {code}**에 대한 최근 시계열 데이터")
+            filtered_df = current_df[current_df["mold_code"] == code]
+
+            if filtered_df.empty:
+                st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
+                continue
+
+            cols = st.columns(2)
+            for i, var in enumerate(selected_vars):
+                with cols[i % 2]:
+                    fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var)
+                    unique_key = f"{code}_{var}_{i}_{st.session_state.current_idx}"
+                    st.plotly_chart(fig, use_container_width=True, key=unique_key)
+
+
+
+
+
+
+
+
+
 
 # 불량 테이블 렌더링
 def render_defect_table(current_df):

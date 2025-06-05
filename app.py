@@ -9,6 +9,7 @@ st.set_page_config(
 # st.set_page_config(page_title="실시간 주조 공정 모니터링", page_icon="⏱️", layout="wide")
 
 
+
 st.markdown("### 뭐든지 다해! **주조!** – 공정을 알고, 불량을 잡다.")
 
 st.title('뭐든지 다해! 주조!')
