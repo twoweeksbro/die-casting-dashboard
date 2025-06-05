@@ -17,7 +17,7 @@ def load_data():
     return df
 
 df = load_data()
-df.columns
+
 # 요일별 불량률
 st.subheader("1. 요일별 불량")
 fail_rate = df.groupby("weekday")["passorfail"].mean().reset_index()

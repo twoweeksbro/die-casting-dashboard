@@ -28,6 +28,16 @@ def load_model():
 
 model = load_model()
 
+
+# # 전체 예측 진행
+# @st.cache_data
+# def pre_predict():
+    
+
+
+
+
+
 # Session State 초기화
 st.session_state.setdefault("current_idx", 100)
 st.session_state.setdefault("is_running", False)
@@ -172,7 +182,7 @@ def render_time_series(current_df, selected_vars):
     cols = st.columns(2)
     for i, var in enumerate(selected_vars):
         with cols[i % 2]:
-            fig = px.line(current_df.tail(100), x="datetime", y=var, title=var)
+            fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color='mold_code')
             st.plotly_chart(fig, use_container_width=True)
 
 # 불량 테이블 렌더링
@@ -193,7 +203,7 @@ st.subheader("주요 변수 시계열")
 # 변수 선택 (시계열 그래프용)
 available_vars = df.select_dtypes("number").columns.tolist()
 selected_vars = st.multiselect(
-    "시계열로 볼 변수 선택 (최대 4개)",
+    "시계열로 볼 변수 선택",
     available_vars,
     default=["molten_temp", "cast_pressure", "low_section_speed", "upper_mold_temp1"]
 )
@@ -222,7 +232,7 @@ if selected_vars:
                 render_defect_table(current_df)
 
             st.session_state.current_idx += 1
-            time.sleep(2)
+            time.sleep(1)
 
             if not st.session_state.is_running:
                 break
