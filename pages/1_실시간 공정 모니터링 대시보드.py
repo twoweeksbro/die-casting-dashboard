@@ -39,9 +39,9 @@ model = load_model()
 
 
 # Session State 초기화
-st.session_state.setdefault("current_idx", 1000)
+st.session_state.setdefault("current_idx", 100)
 st.session_state.setdefault("is_running", False)
-st.session_state.is_running = False  # 시작 기본값
+
 
 
 
@@ -235,40 +235,89 @@ def render_dashboard(current_df):
 #                     unique_key = f"{code}_{var}_{i}_{st.session_state.current_idx}"
 #                     st.plotly_chart(fig, use_container_width=True,key=unique_key)
 
+# 잘됨 탭 강조는 안되지만 but 탭이 초기화
+# def render_time_series(current_df, selected_vars):
+#     st.subheader("몰드 코드별 주요 변수 시계열")
+
+#     mold_codes = df["mold_code"].unique()
+    
+#     # tab_labels = ["전체"] + [f"몰드 코드 {code}" for code in mold_codes]
+    
+#     # 탭 라벨: 현재 몰드 코드만 🔴 강조
+#     latest_mold_code = current_df["mold_code"].iloc[-1]  # 현재 시점에서 가장 최근 몰드 코드
+
+#     tab_labels = [f"전체"] + [
+#         f"🔴 몰드 코드 {code}" if code == latest_mold_code else f"몰드 코드 {code}"
+#         for code in mold_codes
+#     ]
+    
+    
+#     tab_objects = st.tabs(tab_labels)
+
+#     # 전체 탭
+#     with tab_objects[0]:
+#         st.markdown("**전체 몰드 코드**의 최근 시계열 데이터")
+#         cols = st.columns(2)
+#         for i, var in enumerate(selected_vars):
+#             with cols[i % 2]:
+#                 fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color="mold_code")
+#                 unique_key = f"전체_{var}_{i}_{st.session_state.current_idx}"
+#                 st.plotly_chart(fig, use_container_width=True, key=unique_key)
+
+#     # 개별 몰드 코드 탭
+#     for idx, (code, tab) in enumerate(zip(mold_codes, tab_objects[1:])):
+#         with tab:
+#             st.markdown(f"**몰드 코드 {code}**에 대한 최근 시계열 데이터")
+#             filtered_df = current_df[current_df["mold_code"] == code]
+
+#             if filtered_df.empty:
+#                 st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
+#                 continue
+
+#             cols = st.columns(2)
+#             for i, var in enumerate(selected_vars):
+#                 with cols[i % 2]:
+#                     fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var)
+#                     unique_key = f"{code}_{var}_{i}_{st.session_state.current_idx}"
+#                     st.plotly_chart(fig, use_container_width=True, key=unique_key)
+
+
+# 몰드 코드 목록 (전체 포함)
+mold_codes = df["mold_code"].unique().tolist()
+mold_codes = ["전체"] + mold_codes
+
+selected_code = st.sidebar.radio("몰드 코드 선택", mold_codes, key="mold_code_selector")
+
 
 def render_time_series(current_df, selected_vars):
     st.subheader("몰드 코드별 주요 변수 시계열")
 
-    mold_codes = df["mold_code"].unique()
-    tab_labels = ["전체"] + [f"몰드 코드 {code}" for code in mold_codes]
-    tab_objects = st.tabs(tab_labels)
 
-    # 전체 탭
-    with tab_objects[0]:
+    # 가장 최근 몰드 코드
+    latest_mold_code = current_df["mold_code"].iloc[-1]
+    st.markdown(f"### 🔴 현재 데이터의 몰드 코드: `{latest_mold_code}`")
+
+    # 사이드바 라디오 버튼으로 선택
+
+    if selected_code == "전체":
+        filtered_df = current_df
         st.markdown("**전체 몰드 코드**의 최근 시계열 데이터")
-        cols = st.columns(2)
-        for i, var in enumerate(selected_vars):
-            with cols[i % 2]:
-                fig = px.line(current_df.tail(50), x="datetime", y=var, title=var, color="mold_code")
-                unique_key = f"전체_{var}_{i}_{st.session_state.current_idx}"
-                st.plotly_chart(fig, use_container_width=True, key=unique_key)
+        color = "mold_code"
+    else:
+        filtered_df = current_df[current_df["mold_code"] == selected_code]
+        st.markdown(f"**몰드 코드 {selected_code}**에 대한 최근 시계열 데이터")
+        color = None  # 단일 색상
 
-    # 개별 몰드 코드 탭
-    for idx, (code, tab) in enumerate(zip(mold_codes, tab_objects[1:])):
-        with tab:
-            st.markdown(f"**몰드 코드 {code}**에 대한 최근 시계열 데이터")
-            filtered_df = current_df[current_df["mold_code"] == code]
+    if filtered_df.empty:
+        st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
+        return
 
-            if filtered_df.empty:
-                st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
-                continue
-
-            cols = st.columns(2)
-            for i, var in enumerate(selected_vars):
-                with cols[i % 2]:
-                    fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var)
-                    unique_key = f"{code}_{var}_{i}_{st.session_state.current_idx}"
-                    st.plotly_chart(fig, use_container_width=True, key=unique_key)
+    cols = st.columns(2)
+    for i, var in enumerate(selected_vars):
+        with cols[i % 2]:
+            fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var, color=color)
+            unique_key = f"{selected_code}_{var}_{i}_{st.session_state.current_idx}"
+            st.plotly_chart(fig, use_container_width=True, key=unique_key)
 
 
 
@@ -305,6 +354,63 @@ selected_vars = st.multiselect(
 chart_placeholder = st.empty()
 table_placeholder = st.empty()
 
+monitor_placeholder = st.empty()
+
+
+
+
+
+
+group_dict = {
+    "① 생산 상태 및 장비 조건": [
+        'working', 'emergency_stop', 'tryshot_signal',
+        'count', 'line', 'heating_furnace', 'EMS_operation_time'
+    ],
+    "② 온도 관련": [
+        'molten_temp', 'upper_mold_temp1', 'upper_mold_temp2', 'upper_mold_temp3',
+        'lower_mold_temp1', 'lower_mold_temp2', 'lower_mold_temp3',
+        'sleeve_temperature', 'Coolant_temperature'
+    ],
+    "③ 성형 공정 (속도/압력/두께)": [
+        'low_section_speed', 'high_section_speed', 'cast_pressure',
+        'molten_volume', 'biscuit_thickness', 'facility_operation_cycleTime', 'production_cycletime'
+    ]
+}
+
+# 현재 선택된 변수
+all_vars = sum(group_dict.values(), [])
+selected_var = st.sidebar.radio("📈 시계열로 볼 변수 선택", all_vars, index=0)
+
+# 더 많은 변수 시각화 렌더링
+def render_more_data(current_df):
+    # 그룹별 변수 정의
+
+    # 각 그룹에 대해 보여주기
+    for group_name, variables in group_dict.items():
+        st.markdown(f"## 🔧 {group_name}")
+        cols = st.columns(len(variables))
+
+        for i, var in enumerate(variables):
+            value = current_df.iloc[-1][var]
+            cols[i].metric(label=var, value=f"{value:.2f}" if pd.api.types.is_numeric_dtype(current_df[var]) else value)
+
+        if selected_var in variables:
+            st.markdown(f"### ⏳ {selected_var} 시계열")
+            fig = px.line(current_df.tail(50), x="datetime", y=selected_var, title=selected_var)
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.divider()
+    
+
+
+
+
+
+
+
+
+
+
 # 실시간 시뮬레이션
 if selected_vars:
     if st.session_state.is_running:
@@ -324,6 +430,10 @@ if selected_vars:
 
             with table_placeholder.container():
                 render_defect_table(current_df)
+                
+            with monitor_placeholder.container():
+                render_more_data(current_df)
+                
 
             st.session_state.current_idx += 1
             time.sleep(1)
