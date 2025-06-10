@@ -5,7 +5,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import f1_score, recall_score, confusion_matrix
 from catboost import Pool
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, recall_score, classification_report, confusion_matrix
 from sklearn.metrics import classification_report
