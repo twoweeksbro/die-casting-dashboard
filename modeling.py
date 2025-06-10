@@ -337,6 +337,8 @@ top_features = feature_names[sorted_idx][:10]
 import pandas as pd
 import numpy as np
 import xgboost as xgb
+from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
@@ -406,16 +408,11 @@ print("F1 Score:", f1_score(y_test, y_pred))
 preprocessed_X = pipeline.named_steps['preprocessing'].transform(X_test)
 
 # 2. 전처리 후 실제 feature 이름 복원
-# feature_names = pipeline.named_steps['preprocessing'].get_feature_names_out()
-
-
-
 # 전처리된 feature 이름 얻기
 raw_feature_names = pipeline.named_steps['preprocessing'].get_feature_names_out()
 
 # 'num__' 또는 'cat__' 제거
 feature_names = [name.split("__")[-1] for name in raw_feature_names]
-
 
 
 
@@ -439,3 +436,75 @@ print(shap_df.head(10))
 
 shap.plots.bar(shap_values)        # bar plot (기여도 순서)
 shap.plots.waterfall(shap_values[0])  # 한 샘플에 대한 상세 흐름
+
+
+
+
+
+
+
+
+
+
+
+
+# XGB - model save
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+import pickle
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder
+
+# 1. 데이터 불러오기
+df = pd.read_csv("data/train.csv")
+
+# 2. 불필요한 컬럼 제거
+drop_cols = [
+    'id', 'date', 'time', 'registration_time',
+    'line', 'name', 'mold_name', 'upper_mold_temp3', 'lower_mold_temp3'
+]
+df = df.drop(columns=drop_cols, errors='ignore')
+
+# 3. 피처/타겟 분리
+X = df.drop(columns='passorfail')
+y = df['passorfail']
+
+# 4. 수치형 / 범주형 컬럼 분리
+num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_cols = X.select_dtypes(include=['object']).columns.tolist()
+
+# 5. 전처리 파이프라인 정의
+preprocessor = ColumnTransformer(transformers=[
+    ('num', SimpleImputer(strategy='most_frequent'), num_cols),
+    ('cat', Pipeline([
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('encoder', OrdinalEncoder())
+    ]), cat_cols)
+])
+
+# 6. 전체 파이프라인 구성
+pipeline = Pipeline(steps=[
+    ('preprocessing', preprocessor),
+    ('model', xgb.XGBClassifier(
+        n_estimators=100,
+        max_depth=4,
+        learning_rate=0.1,
+        random_state=42,
+        use_label_encoder=False,
+        eval_metric='logloss'
+    ))
+])
+
+# 7. 학습
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+pipeline.fit(X_train, y_train)
+
+# 8. 모델 저장
+with open("xgb_pipeline_model.pkl", "wb") as f:
+    pickle.dump(pipeline, f)
+
+print("✅ 모델이 'xgb_pipeline_model.pkl'로 저장되었습니다.")

@@ -6,6 +6,7 @@ import pickle
 import plotly.graph_objects as go
 import shap
 import numpy as np
+import matplotlib.pyplot as plt
 
 st.set_page_config("실시간 주조 공정 시뮬레이션", layout="wide")
 st.title("실시간 주조 공정 모니터링 대시보드")
@@ -52,15 +53,24 @@ def load_anomaly_model():
     return loaded_model
 
 
+# 모델 불러오기
+@st.cache_data
+def load_model2():
+    # 1. 저장된 모델 불러오기
+    with open("xgb_pipeline_model.pkl", "rb") as f:
+        pipeline = pickle.load(f)
+    return pipeline
 
 
 
-
-
+drop_cols = [
+    'id', 'date', 'time', 'registration_time',
+    'line', 'name', 'mold_name', 'upper_mold_temp3', 'lower_mold_temp3'
+]
 
 model = load_model()
 model_anom = load_anomaly_model()
-
+model2 = load_model2()
 
 # # 전체 예측 진행
 # @st.cache_data
@@ -68,6 +78,52 @@ model_anom = load_anomaly_model()
     
 
 
+
+# shap 
+def show_shap_explanation(sample_df, pipeline=model2):
+    """
+    주어진 단일 샘플과 학습된 파이프라인을 기반으로
+    SHAP 기여도 시각화를 Streamlit으로 출력합니다.
+    
+    Parameters:
+    - sample_df: DataFrame, shape (1, n_features) → 단일 샘플
+    - pipeline: 학습된 sklearn Pipeline (전처리 + 모델 포함)
+    """
+    
+    sample_df = sample_df.iloc[[-1]].drop(columns=drop_cols)
+    
+    # 1. 전처리 및 모델 분리
+    X_transformed = pipeline.named_steps['preprocessing'].transform(sample_df)
+    model_only = pipeline.named_steps['model']
+
+    # 2. feature 이름 복원
+    raw_feature_names = pipeline.named_steps['preprocessing'].get_feature_names_out()
+    feature_names = [name.split("__")[-1] for name in raw_feature_names]
+
+    # 3. 예측 및 확률
+    # pred = pipeline.predict(sample_df)[0]
+    # proba = pipeline.predict_proba(sample_df)[0][1]
+
+    # 4. SHAP 분석 (TreeExplainer 사용)
+    explainer = shap.TreeExplainer(model_only)
+    shap_values = explainer.shap_values(X_transformed)
+
+    # 5. Streamlit 출력
+    # st.subheader(f"예측 결과: {pred} (불량일 확률: {proba:.2%})")
+
+    # bar plot
+    st.markdown("#### 🔍 SHAP Bar Plot (Top 기여도)")
+    shap_bar = shap.Explanation(values=shap_values[0], data=X_transformed[0], feature_names=feature_names)
+    fig_bar, ax = plt.subplots()
+    shap.plots.bar(shap_bar, show=False)
+    st.pyplot(fig_bar)
+
+    # # waterfall plot
+    # st.markdown("#### 🌊 SHAP Waterfall Plot")
+    # shap_waterfall = shap.Explanation(values=shap_values[0], data=X_transformed[0], feature_names=feature_names)
+    # fig_wf, ax = plt.subplots()
+    # shap.plots.waterfall(shap_waterfall, show=False)
+    # st.pyplot(fig_wf)
 
 
 
@@ -147,8 +203,13 @@ def render_dashboard(current_df):
     col1, col2, col3 = st.columns(3)
     col1, col2, col3, col4 = st.columns(4)
 
-    y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
-    y_proba = model.predict_proba(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0][1]
+    # RF model
+    # y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
+    # y_proba = model.predict_proba(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0][1]
+    
+    # XGB
+    y_pred = model2.predict(current_df.iloc[[-1]].drop(columns=drop_cols))[0]
+    y_proba = model2.predict_proba(current_df.iloc[[-1]].drop(columns=drop_cols))[0][1]
 
     # col1.metric("예측 결과", y_pred)
     # col2.metric("불량 확률", y_proba)
@@ -305,36 +366,6 @@ with st.sidebar:
 
 
 
-# def render_time_series(current_df, selected_vars):
-#     # st.subheader("몰드 코드별 주요 변수 시계열")
-
-
-#     # 가장 최근 몰드 코드
-#     latest_mold_code = current_df["mold_code"].iloc[-1]
-#     st.markdown(f"### 🔴 현재 데이터의 몰드 코드: `{latest_mold_code}`")
-
-#     # 사이드바 라디오 버튼으로 선택
-
-#     if selected_code == "전체":
-#         filtered_df = current_df
-#         st.markdown("**전체 몰드 코드**의 최근 시계열 데이터")
-#         color = "mold_code"
-#     else:
-#         filtered_df = current_df[current_df["mold_code"] == selected_code]
-#         st.markdown(f"**몰드 코드 {selected_code}**에 대한 최근 시계열 데이터")
-#         color = None  # 단일 색상
-
-#     if filtered_df.empty:
-#         st.info("해당 몰드 코드에 대한 데이터가 아직 없습니다.")
-#         return
-
-#     cols = st.columns(2)
-#     for i, var in enumerate(selected_vars):
-#         with cols[i % 2]:
-#             fig = px.line(filtered_df.tail(50), x="datetime", y=var, title=var, color=color)
-#             unique_key = f"{selected_code}_{var}_{i}_{st.session_state.current_idx}"
-#             st.plotly_chart(fig, use_container_width=True, key=unique_key)
-
 def render_time_series(current_df, selected_vars):
     # 가장 최근 몰드 코드
     latest_mold_code = current_df["mold_code"].iloc[-1]
@@ -395,14 +426,23 @@ def render_defect_table(current_df):
     st.subheader("🚨 최근 불량 기록")
     st.dataframe(current_df[current_df["passorfail"] == 1].tail(5), use_container_width=True)
 
+
+
 # Placeholder 구역 분리
 kpi_placeholder = st.empty()
-
 st.divider()
+
+
+# shap 구역
+table_placeholder = st.empty()
+st.divider()
+
+
+# 불량 추이 구역
 mgnt_placeholder = st.empty()
-
-
 st.divider()
+
+# 주요 변수 시계열 구역
 st.subheader("주요 변수 시계열")
 
 # 변수 선택 (시계열 그래프용)
@@ -414,7 +454,7 @@ selected_vars = st.multiselect(
 )
 
 chart_placeholder = st.empty()
-table_placeholder = st.empty()
+
 
 monitor_placeholder = st.empty()
 
@@ -598,6 +638,8 @@ if selected_vars:
             with kpi_placeholder.container():
                 render_dashboard(current_df)
 
+            with table_placeholder.container():
+                show_shap_explanation(current_df)
                 
             with mgnt_placeholder.container():
                 render_mgmt(current_df)
@@ -607,7 +649,7 @@ if selected_vars:
                 with st.expander("주요 변수 시계열 보기"):
                     render_time_series(current_df, selected_vars)
 
-    
+
                 
             with monitor_placeholder.container():
                 with st.expander("더 많은 데이터 보기"):
@@ -633,5 +675,5 @@ if selected_vars:
                 
                 
         with monitor_placeholder.container():
-                with st.expander("더 많은 데이터"):
+                with st.expander("더 많은 데이터 보기"):
                     render_more_data(current_df)
