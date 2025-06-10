@@ -7,6 +7,9 @@ import plotly.graph_objects as go
 import shap
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+import matplotlib as mpl
+
 
 st.set_page_config("실시간 주조 공정 시뮬레이션", layout="wide")
 st.title("실시간 주조 공정 모니터링 대시보드")
@@ -103,6 +106,19 @@ eng_to_kr = {
     }
 
 
+# 1. 폰트 경로 지정 fonts/NotoSansKR-Regular.ttf
+# 1. TTF 폰트 경로 지정
+font_path = "fonts/malgun.ttf"  # 실제 경로로 수정
+font_name = fm.FontProperties(fname=font_path).get_name()
+font_prop = fm.FontProperties(fname=font_path)
+
+# 2. 전역 설정
+mpl.rcParams['font.family'] = font_name
+# plt.rcParams['font.family'] ='Malgun Gothic'
+mpl.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+
+
+
 
 # 모델 불러오기
 @st.cache_data
@@ -159,6 +175,8 @@ def show_shap_explanation(sample_df, pipeline=model2):
     - sample_df: DataFrame, shape (1, n_features) → 단일 샘플
     - pipeline: 학습된 sklearn Pipeline (전처리 + 모델 포함)
     """
+
+    
     
     sample_df = sample_df.iloc[[-1]].drop(columns=drop_cols).rename(columns=korean_to_english)
     
@@ -187,10 +205,16 @@ def show_shap_explanation(sample_df, pipeline=model2):
 
     # bar plot
     # st.markdown("#### SHAP Bar Plot (상위 기여도)")
+    # 여기부터
     shap_bar = shap.Explanation(values=shap_values[0], data=X_transformed[0], feature_names=feature_names)
     fig_bar, ax = plt.subplots()
     shap.plots.bar(shap_bar, show=False)
+    # 여기까지만
     # st.pyplot(fig_bar)
+    
+    
+    
+    
     
     
     
@@ -430,9 +454,9 @@ def render_mgmt(current_df):
         
         # matplotlib
         
-        import matplotlib.pyplot as plt
-        plt.rcParams['font.family'] ='Malgun Gothic'
-        plt.rcParams['axes.unicode_minus'] =False
+        # import matplotlib.pyplot as plt
+        # plt.rcParams['font.family'] ='Malgun Gothic'
+        # plt.rcParams['axes.unicode_minus'] =False
 
 
         fig, ax = plt.subplots(figsize=(12,6))
@@ -444,12 +468,12 @@ def render_mgmt(current_df):
         # 최근 100개 이동 불량률
         ax.plot(x, rolling_defect_rate, color='red', label='최근 100개 불량률')
         
-        ax.set_title("전체 vs 최근 100개 불량률 비교")
+        ax.set_title("전체 vs 최근 100개 불량률 비교", fontproperties=font_prop)
         ax.set_xlabel("Index")
-        ax.set_ylabel("불량률")
+        ax.set_ylabel("불량률",fontproperties=font_prop)
         ax.set_ylim(0, 0.5)
         ax.grid(True)
-        ax.legend()
+        ax.legend(prop=font_prop)
         st.pyplot(fig)
         
                 

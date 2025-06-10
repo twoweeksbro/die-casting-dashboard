@@ -67,9 +67,9 @@ def get_sel_id(selected_rows, default_id, display_ids):
         is_selected = False
     if is_selected:
         if isinstance(selected_rows, pd.DataFrame):
-            return str(selected_rows.iloc[0]['id'])
+            return str(selected_rows.iloc[0]['ID'])
         else:
-            return str(selected_rows[0]['id'])
+            return str(selected_rows[0]['ID'])
     elif str(default_id) in display_ids:
         return str(default_id)
     else:
