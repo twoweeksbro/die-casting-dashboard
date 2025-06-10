@@ -40,14 +40,23 @@
 # fig3.update_layout(title="요일-시간 불량 히트맵", xaxis_title="요일", yaxis_title="시간")
 # st.plotly_chart(fig3, use_container_width=True)
 
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
+# 페이지 설정
 st.set_page_config(layout="wide")
 st.title("과거 분석 데스크")
+
+# 색상 코드 정의
+colors = {
+    "연보라": "#A3A0FB",
+    "하늘": "#55D8FE",
+    "청록": "#5FE3A1",
+    "분홍": "#F1B1EB",
+    "자주": "#FE8373",
+    "노랑": "#FFDA83"
+}
 
 @st.cache_data
 def load_data():
@@ -64,10 +73,8 @@ df = load_data()
 st.sidebar.header("필터 조건")
 min_date = df["datetime"].min().date()
 max_date = df["datetime"].max().date()
-
 start_date = st.sidebar.date_input("시작 날짜", min_value=min_date, max_value=max_date, value=min_date)
 end_date = st.sidebar.date_input("종료 날짜", min_value=min_date, max_value=max_date, value=max_date)
-
 filtered_df = df[(df["datetime"].dt.date >= start_date) & (df["datetime"].dt.date <= end_date)]
 
 mold_options = sorted(filtered_df["mold_code"].astype(str).unique())
@@ -80,7 +87,7 @@ if len(filtered_df) == 0:
 
 st.markdown(f"### 총 샘플 수: {len(filtered_df):,}건")
 
-# 그래프 항목 정의
+# 카드 구성
 cards = [
     {"title": "요일별 불량률", "key": "weekday"},
     {"title": "주간 vs 야간 불량률", "key": "shift"},
@@ -90,63 +97,65 @@ cards = [
     {"title": "양품 vs 불량 변수 분포", "key": "distribution"}
 ]
 
-if "expand_chart" not in st.session_state:
-    st.session_state["expand_chart"] = {card["key"]: False for card in cards}
-
 for i in range(0, len(cards), 3):
     cols = st.columns([1, 1, 1], gap="small")
     for j, card in enumerate(cards[i:i+3]):
         with cols[j]:
-            st.markdown(f"**{card['title']}**")
+            with st.container(border=True):
+                st.markdown(f"**{card['title']}**")
 
-            if card["key"] == "weekday":
-                order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                data = filtered_df.groupby("weekday")["passorfail"].mean().reindex(order).reset_index()
-                fig = px.bar(data, x="weekday", y="passorfail", height=250)
+                if card["key"] == "weekday":
+                    order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    data = filtered_df.groupby("weekday")["passorfail"].mean().reindex(order).reset_index()
+                    fig = px.bar(data, x="weekday", y="passorfail", height=250,
+                                 color_discrete_sequence=[colors["연보라"]])
 
-            elif card["key"] == "shift":
-                data = filtered_df.groupby("shift")["passorfail"].mean().reset_index()
-                fig = px.bar(data, x="shift", y="passorfail", height=250)
+                elif card["key"] == "shift":
+                    data = filtered_df.groupby("shift")["passorfail"].mean().reset_index()
+                    fig = px.bar(data, x="shift", y="passorfail", height=250,
+                                 color="shift",
+                                 color_discrete_map={"주간": colors["청록"], "야간": colors["연보라"]})
 
-            elif card["key"] == "heat":
-                heat_df = filtered_df.pivot_table(index="hour", columns="weekday", values="passorfail", aggfunc="mean")
-                order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                heat_df = heat_df[order]
-                fig = px.imshow(heat_df, text_auto=".2f", color_continuous_scale="Blues", height=250)
+                elif card["key"] == "heat":
+                    heat_df = filtered_df.pivot_table(index="hour", columns="weekday", values="passorfail", aggfunc="mean")
+                    order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    heat_df = heat_df[order]
+                    fig = px.imshow(heat_df, text_auto=".2f",
+                                    color_continuous_scale=["#ffffff", colors["청록"]],
+                                    height=250)
+                    fig.update_layout(xaxis_title="요일", yaxis_title="시간")
+                    fig.update_yaxes(autorange="reversed")
 
-            elif card["key"] == "bubble":
-                agg = filtered_df.groupby("mold_code").agg(
-                    fail_rate=("passorfail", "mean"),
-                    count=("passorfail", "count")
-                ).reset_index()
-                fig = px.scatter(
-                    agg, x="count", y="fail_rate", size="count", color="fail_rate",
-                    hover_name="mold_code", labels={"count": "생산건수", "fail_rate": "불량률"},
-                    height=250
-                )
+                elif card["key"] == "bubble":
+                    agg = filtered_df.groupby("mold_code").agg(
+                        fail_rate=("passorfail", "mean"),
+                        count=("passorfail", "count")
+                    ).reset_index()
+                    fig = px.scatter(
+                        agg, x="count", y="fail_rate", size="count", color="fail_rate",
+                        hover_name="mold_code", labels={"count": "생산건수", "fail_rate": "불량률"},
+                        color_continuous_scale=[[0, "white"], [1, "#A3A0FB"]],
+                        height=250
+                    )
 
-            elif card["key"] == "trend":
-                data = filtered_df.resample("D", on="datetime")["passorfail"].mean().reset_index()
-                fig = px.line(data, x="datetime", y="passorfail", markers=True, height=250)
 
-            elif card["key"] == "distribution":
-                numeric_cols = filtered_df.select_dtypes(include="number").columns.drop(["passorfail", "hour"])
-                var = st.selectbox("변수 선택", numeric_cols, key=f"select_{card['key']}")
-                fig = px.histogram(
-                    filtered_df,
-                    x=var,
-                    color=filtered_df["passorfail"].map({0: "양품", 1: "불량"}),
-                    barmode="overlay",
-                    nbins=40,
-                    labels={"color": "불량 여부"},
-                    height=250
-                )
+                elif card["key"] == "trend":
+                    data = filtered_df.resample("D", on="datetime")["passorfail"].mean().reset_index()
+                    fig = px.line(data, x="datetime", y="passorfail", markers=True,
+                                  color_discrete_sequence=[colors["자주"]], height=250)
 
-            st.plotly_chart(fig, use_container_width=True, key=f"mini_{card['key']}")
+                elif card["key"] == "distribution":
+                    numeric_cols = filtered_df.select_dtypes(include="number").columns
+                    numeric_cols = [col for col in numeric_cols if col not in ["passorfail", "hour", "id"]]
+                    var = st.selectbox("변수 선택", numeric_cols, key=f"select_{card['key']}")
+                    fig = px.histogram(
+                        filtered_df,
+                        x=var,
+                        color=filtered_df["passorfail"].map({0: "양품", 1: "불량"}),
+                        color_discrete_map={"양품": colors["노랑"], "불량": colors["자주"]},
+                        barmode="overlay", nbins=40,
+                        labels={"color": "불량 여부"},
+                        height=250
+                    )
 
-            if st.button(f"{card['title']} 전체 그래프 보기", key=f"btn_{card['key']}"):
-                st.session_state["expand_chart"][card["key"]] = not st.session_state["expand_chart"].get(card["key"], False)
-
-            if st.session_state["expand_chart"].get(card["key"], False):
-                fig.update_layout(height=500)
-                st.plotly_chart(fig, use_container_width=True, key=f"full_{card['key']}")
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
