@@ -121,7 +121,7 @@ def plot_timeseries_mold(df_mold, sel_row_df, feature, split_val=None, sel_color
 
 # ────────────── 메인 함수 (대시보드) ──────────────
 def main():
-    st.title("불량품 데이터 분석 대시보드")
+    st.title("불량 데이터 분석 대시보드")
     # --- 데이터 준비
     df = preprocess_cluster(load_data())
     shap_results = get_shap_all()
