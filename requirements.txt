@@ -6,6 +6,5 @@ plotly
 scikit-learn
 scipy
 shap
-st-aggrid
-streamlit
+streamlit-aggrid
 xgboost
