@@ -113,9 +113,9 @@ font_name = fm.FontProperties(fname=font_path).get_name()
 font_prop = fm.FontProperties(fname=font_path)
 
 # 2. 전역 설정
-mpl.rcParams['font.family'] = font_name
+# mpl.rcParams['font.family'] = font_name
 # plt.rcParams['font.family'] ='Malgun Gothic'
-mpl.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+# mpl.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
 
 
 
@@ -189,7 +189,7 @@ def show_shap_explanation(sample_df, pipeline=model2):
     feature_names = [name.split("__")[-1] for name in raw_feature_names]
 
     # feature 한글 복원
-    feature_names = [eng_to_kr.get(col, col) for col in feature_names]
+    # feature_names = [eng_to_kr.get(col, col) for col in feature_names]
 
     
     # 3. 예측 및 확률
@@ -206,6 +206,9 @@ def show_shap_explanation(sample_df, pipeline=model2):
     # bar plot
     # st.markdown("#### SHAP Bar Plot (상위 기여도)")
     # 여기부터
+    mpl.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+
+    
     shap_bar = shap.Explanation(values=shap_values[0], data=X_transformed[0], feature_names=feature_names)
     fig_bar, ax = plt.subplots()
     shap.plots.bar(shap_bar, show=False)
@@ -217,7 +220,8 @@ def show_shap_explanation(sample_df, pipeline=model2):
     
     
     
-    
+    feature_names = [eng_to_kr.get(col, col) for col in feature_names]
+
     # 6. SHAP 값을 정리해서 DataFrame 생성
     shap_df = pd.DataFrame({
         "feature": feature_names,
@@ -242,7 +246,7 @@ def show_shap_explanation(sample_df, pipeline=model2):
 
 
 # Session State 초기화
-st.session_state.setdefault("current_idx", 1200)
+st.session_state.setdefault("current_idx", 1105)
 st.session_state.setdefault("is_running", False)
 
 
@@ -254,13 +258,13 @@ with st.sidebar:
     st.markdown("\n")
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("START", help="시작"):
+        if st.button("시작", help="시작"):
             st.session_state.is_running = True
     with col2:
-        if st.button("STOP", help="멈춤"):
+        if st.button("정지", help="멈춤"):
             st.session_state.is_running = False
     with col3:
-        if st.button("RESET", help="초기화"):
+        if st.button("초기화", help="초기화"):
             st.session_state["current_idx"] = 100
             st.session_state["is_running"] = False
             
@@ -321,7 +325,7 @@ def render_dashboard(current_df):
     st.subheader('불량 예측')
     
     # col1, col2, col3 = st.columns([1,1,2])
-    col1, col2= st.columns([1,1])
+    col1, col2, col3 = st.columns([2,1,1])
 
     # RF model
     # y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
@@ -366,8 +370,13 @@ def render_dashboard(current_df):
         )
 
         st.plotly_chart(fig, use_container_width=True, key=f"defect_linear_gauge_{st.session_state.current_idx}")
+        
+    with col2:
         render_status_box("불량 예측 결과", y_pred)
-         # render_status_box("실제 결과", current_df.iloc[-1]['passorfail'])
+        
+        
+    with col3:
+        # render_status_box("실제 결과", current_df.iloc[-1]['passorfail'])
         # 테스트 데이터에서 수치형 추출
         
         # num_test = current_df.iloc[[-1]].select_dtypes(include=['int64', 'float64']).drop(columns=['passorfail'])
@@ -378,16 +387,86 @@ def render_dashboard(current_df):
         pred = model_anom.predict(num_test)
         # pred = loaded_model.predict(num_test)
         pred = np.where(pred == -1, 1, 0)
-        render_status_box("이상 탐지 결과", pred, 1)
-        render_status_box("실제 값", current_df.iloc[-1]['불량 여부'])
-
-    with col2:
         
+        render_status_box("이상 탐지 결과", pred, 1)
+        
+    col11, col12 = st.columns(2)
+        
+    with col11:
+        st.subheader('불량 추이')
+        
+        # 최근 100개 데이터 기준
+
+        total_defect_rate = (current_df['불량 여부']==1).mean()
+        rolling_defect_rate = current_df["불량 여부"].rolling(window=100).mean()
+        x = current_df['날짜시간']
+        
+        current_df = current_df.tail(50).copy() # .copy()를 사용하여 원본 DataFrame에 영향X
+        fig = go.Figure()
+
+        # 전체 누적 불량률 (수평선)
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=[total_defect_rate] * len(x),
+            mode="lines",
+            name="전체 누적 불량률",
+            line=dict(color="black", dash="dot")
+        ))
+
+        # 최근 100개 이동 불량률
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=rolling_defect_rate,
+            mode="lines",
+            name="최근 100개 불량률",
+            line=dict(color="red")
+        ))
+
+        fig.update_layout(
+            title="전체 vs 최근 100개 불량률 비교",
+            xaxis_title="Index",
+            yaxis_title="불량률",
+            yaxis=dict(range=[0, 0.3]),
+            template="plotly_white"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # matplotlib
+        
+        # import matplotlib.pyplot as plt
+        # plt.rcParams['font.family'] ='Malgun Gothic'
+        # plt.rcParams['axes.unicode_minus'] =False
+
+
+        # fig, ax = plt.subplots(figsize=(12,6))
+        
+        
+        # # 전체 누적 불량률 (수평선)
+        # ax.plot(x, [total_defect_rate] * len(x), linestyle='dotted', color='black', label='전체 누적 불량률')
+
+        # # 최근 100개 이동 불량률
+        # ax.plot(x, rolling_defect_rate, color='red', label='최근 100개 불량률')
+        
+        # ax.set_title("전체 vs 최근 100개 불량률 비교", fontproperties=font_prop)
+        # ax.set_xlabel("Index")
+        # ax.set_ylabel("불량률",fontproperties=font_prop)
+        # ax.set_ylim(0, 0.5)
+        # ax.grid(True)
+        # ax.legend(prop=font_prop)
+        # st.pyplot(fig)
+        
+    
+    
+    with col12:
+        # render_status_box("실제 값", current_df.iloc[-1]['불량 여부'])
+        
+
         tab1, tab2 = st.tabs(["시각화", "데이터"])
         fig_bar, shap_df = show_shap_explanation(current_df)
         # 탭 1: 시각화
         with tab1:
-            st.markdown("#### SHAP Bar Plot (Top 기여도)")
+            st.markdown("#### SHAP Bar Plot (상위 기여도)")
             st.pyplot(fig_bar)
 
         # 탭 2: 데이터 표시
@@ -412,78 +491,10 @@ def render_dashboard(current_df):
 
 # 관리도 렌더링
 def render_mgmt(current_df):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader('불량 추이')
-        
-        # 최근 100개 데이터 기준
-        
-        total_defect_rate = (current_df['불량 여부']==1).mean()
-        rolling_defect_rate = current_df["불량 여부"].rolling(window=100).mean()
-        x = current_df['날짜시간']
-        
-        # fig = go.Figure()
-
-        # # 전체 누적 불량률 (수평선)
-        # fig.add_trace(go.Scatter(
-        #     x=x,
-        #     y=[total_defect_rate] * len(x),
-        #     mode="lines",
-        #     name="전체 누적 불량률",
-        #     line=dict(color="black", dash="dot")
-        # ))
-
-        # # 최근 100개 이동 불량률
-        # fig.add_trace(go.Scatter(
-        #     x=x,
-        #     y=rolling_defect_rate,
-        #     mode="lines",
-        #     name="최근 100개 불량률",
-        #     line=dict(color="red")
-        # ))
-
-        # fig.update_layout(
-        #     title="전체 vs 최근 100개 불량률 비교",
-        #     xaxis_title="Index",
-        #     yaxis_title="불량률",
-        #     yaxis=dict(range=[0, 1]),
-        #     template="plotly_white"
-        # )
-
-        # st.plotly_chart(fig, use_container_width=True)
-        
-        # matplotlib
-        
-        # import matplotlib.pyplot as plt
-        # plt.rcParams['font.family'] ='Malgun Gothic'
-        # plt.rcParams['axes.unicode_minus'] =False
-
-
-        fig, ax = plt.subplots(figsize=(12,6))
-        
-        
-        # 전체 누적 불량률 (수평선)
-        ax.plot(x, [total_defect_rate] * len(x), linestyle='dotted', color='black', label='전체 누적 불량률')
-
-        # 최근 100개 이동 불량률
-        ax.plot(x, rolling_defect_rate, color='red', label='최근 100개 불량률')
-        
-        ax.set_title("전체 vs 최근 100개 불량률 비교", fontproperties=font_prop)
-        ax.set_xlabel("Index")
-        ax.set_ylabel("불량률",fontproperties=font_prop)
-        ax.set_ylim(0, 0.5)
-        ax.grid(True)
-        ax.legend(prop=font_prop)
-        st.pyplot(fig)
-        
-                
-        
-    
-    with col2:
-
-        st.subheader("최근 불량 기록")
-        current_df.drop([])
-        st.dataframe(current_df[current_df["불량 여부"] == 1].tail(10), use_container_width=True)
+    st.subheader("최근 불량 기록")
+    current_df = current_df.drop(columns= ['ID','라인','이름','금형 이름','시간','날짜','날짜시간'])
+    # st.dataframe(current_df[current_df["불량 여부"] == 1].tail(10), use_container_width=True)
+    st.dataframe(current_df[current_df["불량 여부"] == 1], use_container_width=True)
     
 
 
@@ -542,7 +553,7 @@ def render_time_series(current_df, selected_vars):
             fig.add_trace(go.Scatter(
                 x=df_tail["날짜시간"], y=[lcl] * len(df_tail),
                 mode="lines", name="LCL (μ−3σ)",
-                line=dict(dash="dash", color="blue")
+                line=dict(dash="dash", color="red")
             ))
 
             unique_key = f"{selected_code}_{var}_{i}_{st.session_state.current_idx}"
@@ -569,7 +580,7 @@ st.divider()
 
 # shap 구역
 table_placeholder = st.empty()
-st.divider()
+# st.divider()
 
 
 # 불량 추이 구역

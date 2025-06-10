@@ -122,7 +122,7 @@ def delete_notice(nid):
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     # --- 페이지 상단 CSS 삽입 (Customize) ---
-    st.set_page_config(page_title="📢 꾸민 공지사항 게시판", layout="wide")
+    st.set_page_config(page_title="공지사항", layout="wide")
     # --- 스타일: 글로벌 CSS ---
     st.markdown(
         """
@@ -132,7 +132,7 @@ def main():
             background: #f5f7fa;
         }
         .notice-banner {
-            background: linear-gradient(90deg, #2a3f4a 90%, #F3E22F 100%);
+            background: linear-gradient(90deg, #5E7A8A 90%, #FFEB3B 100%);
             color: #fff;
             border-radius: 16px;
             padding: 1.4rem 2rem;
@@ -214,12 +214,12 @@ def main():
         st.session_state.selected_notice = None
 
 
-    st.title("📢 공지사항 (사이트 스타일)")
-    st.markdown('<div class="notice-banner">⚠️ 6월 12일(수) 서버 점검 예정 - 오전 6:00~8:00 서비스가 중단됩니다.</div>', unsafe_allow_html=True)
-    with st.expander("📝 새 공지 등록", expanded=False):
+    st.title("공지 사항")
+    st.markdown('<div class="notice-banner"> 6월 12일(수) 서버 점검 예정 - 오전 6:00~8:00 서비스가 중단됩니다.</div>', unsafe_allow_html=True)
+    with st.expander("새 공지 등록", expanded=False):
         with st.form(key="notice_form"):
             title = st.text_input("제목", placeholder="공지 제목을 입력하세요")
-            content = st.text_area("내용", height=120, placeholder="공지 내용을 입력하세요 (줄바꿈 가능)")
+            content = st.text_area("내용", height=120, placeholder="공지 내용을 입력하세요 ")
             is_pinned = st.checkbox("중요(상단 고정)", value=False)
             tag = st.text_input("태그 (예: [공지], [업데이트], [이벤트] 등)", placeholder="[공지]")
             uploaded_file = st.file_uploader("첨부파일 (선택)", type=["jpg", "jpeg", "png", "pdf", "xlsx", "csv"])
@@ -244,7 +244,7 @@ def main():
         st.session_state.sort_option = "최신순"
 
     if st.session_state.page_mode == "list":
-        st.subheader("📋 공지 목록")
+        st.subheader("공지 목록")
 
         # 1. 🔥 [검색/필터/정렬 UI] ---------------------
         tag_list = list({row[5] for row in get_notices() if row[5]})  # 고유 tag 목록

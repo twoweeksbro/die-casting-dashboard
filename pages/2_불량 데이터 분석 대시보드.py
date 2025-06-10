@@ -272,11 +272,12 @@ def main():
                         note = make_note(val, split_val, feat, rate_below, rate_above, defect_majority)
                     else:
                         note = f"선택값({feat}: {val:.2f})"
-                    fig = plot_timeseries_mold(df_mold, sel_row_df, feat, split_val, sel_color="green", note=note)
+                    fig = plot_timeseries_mold(df_mold, sel_row_df, feat, split_val, sel_color="lime", note=note)
                     st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("좌측 표에서 불량 데이터를 선택하면 시계열 그래프가 표시됩니다.")
 
+    st.divider()
     # --- 중단1: SHAP 분석(좌)
     col_bottom1, col_bottom2 = st.columns([1, 2])
     with col_bottom1:
@@ -374,7 +375,7 @@ def main():
                 type="rect",
                 x0=x_idx - 0.5, x1=x_idx + 0.5,
                 y0=y_idx - 0.5, y1=y_idx + 0.5,
-                line=dict(color="green", width=4),
+                line=dict(color="lime", width=4),
                 fillcolor="rgba(0,0,0,0)",
                 layer="above"
             )
@@ -407,6 +408,7 @@ def main():
             split_dict[feature] = []
             split_bins[feature] = [-np.inf, np.inf]
 
+    st.divider()
     col_extra1, col_extra2 = st.columns([1, 2])
     with col_extra1:
             summary_msgs = []
