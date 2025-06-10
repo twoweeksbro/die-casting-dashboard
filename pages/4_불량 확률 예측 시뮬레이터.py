@@ -235,7 +235,7 @@ def predict_defect(model, input_df: pd.DataFrame, feature_names: list,
     input_df = input_df[feature_names]
     # Pool 생성
     pool = Pool(input_df, cat_features=cat_feature_names)
-    return model.predict_proba(당구)[0][1]
+    return model.predict_proba(pool)[0][1]
 
 # 결과 경고 표시
 def display_warning(prob: float):

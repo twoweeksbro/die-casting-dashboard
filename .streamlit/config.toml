@@ -1,7 +1,2 @@
 [theme]
-base = "light"  # "light" 또는 "dark"
-primaryColor = "#6D93C8"
-backgroundColor = "#F5F5F5"  # 메인 배경
-secondaryBackgroundColor = "#FFFFFF"  # 카드/사이드바 등
-textColor = "#858585"
-font = "sans serif"
+base="light"

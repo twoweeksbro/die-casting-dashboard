@@ -246,12 +246,17 @@ with st.sidebar:
 
 
 
-def render_status_box(title, value):
+def render_status_box(title, value, anom=0):
         if value == 1:
             # color = "#FF4B4B"  # 불량 - 빨강
             # color = "#F28B82"  # 불량 - 빨강
-            color = "#E57373"  # 불량 - 빨강
-            label = "불량"
+            if anom==1:
+                color = "#FFD54F"
+                label="주의"
+            else:
+                color = "#E57373"  # 불량 - 빨강
+                label = "불량"
+            
         else:
             # color = "#4CAF50"  # 정상 - 초록
             # color = "#A5D6A7"  # 정상 - 초록
@@ -261,7 +266,8 @@ def render_status_box(title, value):
         html_code = f"""
         <div style="
             background-color:{color};
-            padding:1rem;
+            padding:1.5rem;
+            margin: 5px;
             border-radius:10px;
             color:white;
             font-weight:bold;
@@ -348,7 +354,7 @@ def render_dashboard(current_df):
         pred = model_anom.predict(num_test)
         # pred = loaded_model.predict(num_test)
         pred = np.where(pred == -1, 1, 0)
-        render_status_box("이상 탐지 결과", pred)
+        render_status_box("이상 탐지 결과", pred, 1)
         render_status_box("실제 값", current_df.iloc[-1]['불량 여부'])
 
     with col2:
