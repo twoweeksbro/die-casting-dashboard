@@ -546,7 +546,7 @@ alias = {
         "passorfail": "불량 여부",
         "tryshot_signal": "시도 신호",
         "mold_code": "몰드 코드",
-        "heating_furnace": "히팅로 작동 여부"
+        "heating_furnace": "가열로"
     }
 df = df.rename(columns=alias)
 df.to_csv('./data/train_kr.csv', index=False)

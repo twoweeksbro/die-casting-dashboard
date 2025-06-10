@@ -229,7 +229,7 @@ def main_prediction():
 
     # UI용 그룹
     group_dict = {
-        "생산 상태 및 장비 조건": ["working", "tryshot_signal"],
+        "생산 상태 및 장비 조건": ["working", "tryshot_signal", 'mold_code'],
         "온도 관련": [
             "upper_mold_temp1", "upper_mold_temp2", "molten_temp",
             "sleeve_temperature", "Coolant_temperature",
@@ -321,7 +321,22 @@ def main_prediction():
             for var in vars_:
                 if var not in selected_vars:
                     continue
+                
+                # if var == "working":
+                #     # 값이 1/0(str) 형태일 때만 토글
+                #     current = df[var].mode()[0]
+                #     val = st.toggle("가동 여부 (working)", value=(current == "1"))
+                #     input_data[var] = "1" if val else "0"
+                # elif var == "tryshot_signal":
+                #     current = df[var].mode()[0]
+                #     val = st.toggle("트라이샷 신호 (tryshot_signal)", value=(current == "1"))
+                #     input_data[var] = "1" if val else "0"
+                # # mold_code: selectbox
+                # elif var == "mold_code":
+                #     options = sorted(df[var].unique())
+                #     input_data[var] = st.selectbox("금형 코드 (mold_code)", options)
 
+                
                 # 초기값을 가져오거나, 없으면 None (또는 기본값 로직 사용)
                 # if var in initial_values:
                 #     default_value_for_input = initial_values[var]
@@ -331,6 +346,8 @@ def main_prediction():
                 if var in cat_feature_names:
                     options = sorted(df[var].astype(str).unique())
                     
+                   
+
                     # st.selectbox 초기값 설정
                     if var in initial_values and initial_values[var] in options:
                         default_index = options.index(initial_values[var])
@@ -368,16 +385,31 @@ def main_prediction():
                     # 범위가 유효한지를 확인 (q_high <= q_low 인 경우 number_input 사용)
                     if q_high <= q_low:
                         # number_input 사용
-                        if pd.api.types.is_integer_dtype(df[var]):
-                            input_data[var] = st.number_input(
-                                label=var,
-                                value=int(default_value_for_input) # 정수형
-                            )
-                        else:
-                            input_data[var] = st.number_input(
-                                label=var,
-                                value=float(default_value_for_input) # 실수형
-                            )
+                        
+                        if var == "working":
+                        # 값이 1/0(str) 형태일 때만 토글
+                            current = df[var].mode()[0]
+                            val = st.toggle("가동 여부 (working)", value=True,key='working',)
+                            input_data[var] = "1" if val else "0"
+                        elif var == "tryshot_signal":
+                            current = df[var].mode()[0]
+                            val = st.toggle("트라이샷 신호 (tryshot_signal)", value=(current == "1"), key='tryshot_signal')
+                            input_data[var] = "1" if val else "0"
+                        # mold_code: selectbox
+                        elif var == "mold_code":
+                            options = sorted(df[var].unique())
+                            input_data[var] = st.selectbox("금형 코드 (mold_code)", options)
+                            
+                        # if pd.api.types.is_integer_dtype(df[var]):
+                        #     input_data[var] = st.number_input(
+                        #         label=var,
+                        #         value=int(default_value_for_input) # 정수형
+                        #     )
+                        # else:
+                        #     input_data[var] = st.number_input(
+                        #         label=var,
+                        #         value=float(default_value_for_input) # 실수형
+                        #     )
                     else:
                         # 슬라이더 사용
                         if pd.api.types.is_integer_dtype(df[var]):

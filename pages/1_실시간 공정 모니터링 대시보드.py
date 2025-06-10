@@ -66,7 +66,7 @@ korean_to_english = {
     "불량 여부": "passorfail",
     "시도 신호": "tryshot_signal",
     "몰드 코드": "mold_code",
-    "히팅로 작동 여부": "heating_furnace"
+    "가열로": "heating_furnace"
 }
 
 ##
@@ -102,7 +102,7 @@ eng_to_kr = {
         "passorfail": "불량 여부",
         "tryshot_signal": "시도 신호",
         "mold_code": "몰드 코드",
-        "heating_furnace": "히팅로 작동 여부"
+        "heating_furnace": "가열로"
     }
 
 
@@ -611,7 +611,7 @@ monitor_placeholder = st.empty()
 group_dict = {
     "생산 상태 및 장비 조건": [
         '작동 여부', '생산 수량','비상정지',
-        '시도 신호', '히팅로 작동 여부','라인'
+        '시도 신호', '가열로','라인'
     ],
     "온도 관련": [
         '상부 금형 온도1', '상부 금형 온도2', '상부 금형 온도3',
