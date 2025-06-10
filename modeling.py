@@ -295,8 +295,147 @@ with open("final_isolation_forest_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 # 테스트 데이터에서 수치형 추출
-num_test = test_df.select_dtypes(include=['int64', 'float64'])
+num_test = df.select_dtypes(include=['int64', 'float64'])
 
 # 이상치 예측
-test_df['anomaly'] = model.predict(num_test)
-test_df['anomaly'] = test_df['anomaly'].map({1: 0, -1: 1})
+df['anomaly'] = model.predict(num_test)
+df['anomaly'] = df['anomaly'].map({1: 0, -1: 1})
+
+
+#############
+
+
+## XGB
+import pandas as pd
+import shap
+import xgboost as xgb
+csv_path="data/train.csv"
+df = pd.read_csv(csv_path)
+drop_cols = [
+        'id', 'date', 'time', 'registration_time',
+        'line', 'name', 'mold_name', 'upper_mold_temp3', 'lower_mold_temp3'
+    ]
+X = df.drop(columns=drop_cols + ['passorfail'], errors='ignore')
+y = df['passorfail']
+
+for col in X.columns:
+    mode_val = X[col].mode(dropna=True)
+    X[col] = X[col].fillna(mode_val.iloc[0] if not mode_val.empty else 0)
+for col in X.select_dtypes(include='object').columns:
+    X[col] = X[col].astype('category').cat.codes
+model = xgb.XGBClassifier(n_estimators=100, max_depth=4, random_state=42, use_label_encoder=False, eval_metric='logloss')
+model.fit(X, y)
+explainer = shap.TreeExplainer(model)
+shap_values = explainer(X)
+importances = shap_values.abs.mean(0).values
+feature_names = X.columns
+sorted_idx = importances.argsort()[::-1]
+top_features = feature_names[sorted_idx][:10]
+
+
+#### GPT
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score
+import shap
+
+# 1. 데이터 불러오기
+df = pd.read_csv("data/train.csv")
+
+# 2. 기본 변수 설정
+drop_cols = [
+    'id', 'date', 'time', 'registration_time',
+    'line', 'name', 'mold_name', 'upper_mold_temp3', 'lower_mold_temp3'
+]
+df = df.drop(columns=drop_cols, errors='ignore')
+X = df.drop(columns='passorfail')
+y = df['passorfail']
+
+# 3. 컬럼 분류
+num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_cols = X.select_dtypes(include=['object']).columns.tolist()
+
+# 4. 전처리기 구성
+preprocessor = ColumnTransformer(transformers=[
+    ('num', SimpleImputer(strategy='most_frequent'), num_cols),
+    ('cat', Pipeline([
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('encoder', OrdinalEncoder())
+    ]), cat_cols)
+])
+
+# 5. 전체 파이프라인 구성
+pipeline = Pipeline(steps=[
+    ('preprocessing', preprocessor),
+    ('model', xgb.XGBClassifier(
+        n_estimators=100,
+        max_depth=4,
+        learning_rate=0.1,
+        random_state=42,
+        use_label_encoder=False,
+        eval_metric='logloss'
+    ))
+])
+
+
+
+# 6. 학습/테스트 분리
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 7. 모델 학습
+pipeline.fit(X_train, y_train)
+
+# 8. 평가
+y_pred = pipeline.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Recall:", recall_score(y_test, y_pred))
+print("Precision:", precision_score(y_test, y_pred))
+print("F1 Score:", f1_score(y_test, y_pred))
+
+
+
+
+# 칼럼명 복원 다시 9.
+# 1. 전처리된 X_test
+preprocessed_X = pipeline.named_steps['preprocessing'].transform(X_test)
+
+# 2. 전처리 후 실제 feature 이름 복원
+# feature_names = pipeline.named_steps['preprocessing'].get_feature_names_out()
+
+
+
+# 전처리된 feature 이름 얻기
+raw_feature_names = pipeline.named_steps['preprocessing'].get_feature_names_out()
+
+# 'num__' 또는 'cat__' 제거
+feature_names = [name.split("__")[-1] for name in raw_feature_names]
+
+
+
+
+# 3. SHAP explainer 생성
+model_only = pipeline.named_steps['model']
+explainer = shap.Explainer(model_only, feature_names=feature_names)
+
+# 4. 한 샘플 선택
+idx = 0
+single_sample = preprocessed_X[idx:idx+1]
+shap_values = explainer(single_sample)
+
+# 5. 해석용 DataFrame 생성
+shap_df = pd.DataFrame({
+    'feature': feature_names,
+    'shap_value': shap_values.values[0],
+    'value': single_sample[0]
+}).sort_values(by='shap_value', key=abs, ascending=False)
+
+print(shap_df.head(10))
+
+shap.plots.bar(shap_values)        # bar plot (기여도 순서)
+shap.plots.waterfall(shap_values[0])  # 한 샘플에 대한 상세 흐름
