@@ -56,9 +56,9 @@ st.markdown("""
         font-family: 'Noto Sans KR', sans-serif !important;
     }
 
-    .stApp {
-        background-color: #F5F5F5;
-    }
+    # .stApp {
+    #     background-color: #F5F5F5;
+    # }
 
     section[data-testid="stSidebar"] {
         background-color: #384858;
@@ -205,6 +205,17 @@ for i in range(0, len(cards), 3):
 
                 elif card["key"] == "shift":
                     data = filtered_df.groupby("shift")["passorfail"].mean().reset_index()
+                    # fig = px.bar(
+                    #     data,
+                    #     x="shift",
+                    #     y="passorfail",
+                    #     height=250,
+                    #     color="shift",
+                    #     color_discrete_map={
+                    #         "주간": "#71E5E4",
+                    #         "야간": "#71A2EE"
+                    #     }
+                    # )
                     fig = px.bar(
                         data,
                         x="shift",
@@ -216,6 +227,14 @@ for i in range(0, len(cards), 3):
                             "야간": "#71A2EE"
                         }
                     )
+
+                    # 배경 흰색 설정
+                    fig.update_layout(
+                        plot_bgcolor="white",
+                        paper_bgcolor="white"
+                    )
+                                        
+
 
                 elif card["key"] == "heat":
                     heat_df = filtered_df.pivot_table(index="hour", columns="weekday", values="passorfail", aggfunc="mean")
