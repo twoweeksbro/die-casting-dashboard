@@ -1,0 +1,11 @@
+catboost
+matplotlib
+numpy
+pandas
+plotly
+scikit-learn
+scipy
+shap
+st-aggrid
+streamlit
+xgboost
