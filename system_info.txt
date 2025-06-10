@@ -1,0 +1,60 @@
+=== System Information ===
+
+-- Python Version --
+Python 3.11.13
+
+-- Installed Packages --
+catboost                              1.2.8
+geopandas                             1.0.1
+numpy                                 2.0.2
+pandas                                2.2.2
+pandas-datareader                     0.10.0
+pandas-gbq                            0.29.0
+pandas-stubs                          2.2.2.240909
+scikit-learn                          1.6.1
+sklearn-pandas                        2.2.0
+tensorflow                            2.18.0
+tensorflow-datasets                   4.9.9
+tensorflow_decision_forests           1.11.0
+tensorflow-hub                        0.16.1
+tensorflow-io-gcs-filesystem          0.37.1
+tensorflow-metadata                   1.17.1
+tensorflow-probability                0.25.0
+tensorflow-text                       2.18.1
+torch                                 2.6.0+cu124
+torchao                               0.10.0
+torchaudio                            2.6.0+cu124
+torchdata                             0.11.0
+torchsummary                          1.5.1
+torchtune                             0.6.1
+torchvision                           0.21.0+cu124
+
+-- CPU Info --
+model name	: Intel(R) Xeon(R) CPU @ 2.20GHz
+
+-- Memory Info --
+               total        used        free      shared  buff/cache   available
+Mem:            83Gi       1.3Gi        76Gi       2.0Mi       5.8Gi        81Gi
+Swap:             0B          0B          0B
+
+-- GPU Info --
+Tue Jun 10 02:39:33 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.54.15              Driver Version: 550.54.15      CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-40GB          Off |   00000000:00:04.0 Off |                    0 |
+| N/A   38C    P0             49W /  400W |       0MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+

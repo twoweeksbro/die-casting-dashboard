@@ -43,20 +43,79 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 # 페이지 설정
 st.set_page_config(layout="wide")
-st.title("과거 분석 데스크")
 
-# 색상 코드 정의
-colors = {
-    "연보라": "#A3A0FB",
-    "하늘": "#55D8FE",
-    "청록": "#5FE3A1",
-    "분홍": "#F1B1EB",
-    "자주": "#FE8373",
-    "노랑": "#FFDA83"
-}
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
+
+    html, body, [class*="st-"] {
+        font-family: 'Noto Sans KR', sans-serif !important;
+    }
+
+    .stApp {
+        background-color: #F5F5F5;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: #384858;
+    }
+
+    section[data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] select,
+    section[data-testid="stSidebar"] .stTextInput > div > input,
+    section[data-testid="stSidebar"] .stSelectbox > div {
+        background-color: #f0f2f6 !important;
+        color: #000000 !important;
+        border-radius: 0.375rem;
+    }
+
+    section[data-testid="stSidebar"] svg {
+        fill: black !important;
+    }
+
+    .card-inner {
+        background-color: white;
+        min-height: 100%;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .card-inner h5 {
+        text-align: center;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-inner select {
+        background-color: #f0f2f6 !important;
+        color: #000000 !important;
+        border-radius: 0.375rem;
+        padding: 0.25rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
+
+
+
+
+
+
+
 
 @st.cache_data
 def load_data():
@@ -85,7 +144,14 @@ if len(filtered_df) == 0:
     st.warning("선택한 조건에 해당하는 데이터가 없습니다.")
     st.stop()
 
-st.markdown(f"### 총 샘플 수: {len(filtered_df):,}건")
+
+st.markdown(f"""
+    <div style='display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;'>
+        <h1 style='flex: 1; text-align: center; margin: 0;'>과거 분석 데스크</h1>
+        <h4 style='flex: 1; text-align: right; margin: 0; color: #666;'>총 샘플 수: {len(filtered_df):,}건</h4>
+    </div>
+""", unsafe_allow_html=True)
+
 
 # 카드 구성
 cards = [
@@ -101,28 +167,66 @@ for i in range(0, len(cards), 3):
     cols = st.columns([1, 1, 1], gap="small")
     for j, card in enumerate(cards[i:i+3]):
         with cols[j]:
-            with st.container(border=True):
-                st.markdown(f"**{card['title']}**")
+            with st.container():
+                # 카드 내부 HTML 구조 시작
+                st.markdown(f'''
+                    <style>
+                        .card-inner {{
+                            background-color: white;
+                            min-height: 100%;
+                            padding: 1rem;
+                            border-radius: 0px;  /* 직사각형 */
+                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: space-between;
+                        }}
+                        .card-inner h5 {{
+                            text-align: center;
+                            margin-bottom: 0.5rem;  /* 간격 줄이기 */
+                        }}
+                    </style>
+                    <div class="card-inner">
+                        <h5><strong>{card['title']}</strong></h5>
+                ''', unsafe_allow_html=True)
+
+                fig = None  # 초기화
 
                 if card["key"] == "weekday":
                     order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
                     data = filtered_df.groupby("weekday")["passorfail"].mean().reindex(order).reset_index()
-                    fig = px.bar(data, x="weekday", y="passorfail", height=250,
-                                 color_discrete_sequence=[colors["연보라"]])
+                    fig = px.bar(
+                        data,
+                        x="weekday",
+                        y="passorfail",
+                        height=250,
+                        color_discrete_sequence=["#5B62F6"]
+                    )
 
                 elif card["key"] == "shift":
                     data = filtered_df.groupby("shift")["passorfail"].mean().reset_index()
-                    fig = px.bar(data, x="shift", y="passorfail", height=250,
-                                 color="shift",
-                                 color_discrete_map={"주간": colors["청록"], "야간": colors["연보라"]})
+                    fig = px.bar(
+                        data,
+                        x="shift",
+                        y="passorfail",
+                        height=250,
+                        color="shift",
+                        color_discrete_map={
+                            "주간": "#71E5E4",
+                            "야간": "#71A2EE"
+                        }
+                    )
 
                 elif card["key"] == "heat":
                     heat_df = filtered_df.pivot_table(index="hour", columns="weekday", values="passorfail", aggfunc="mean")
                     order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
                     heat_df = heat_df[order]
-                    fig = px.imshow(heat_df, text_auto=".2f",
-                                    color_continuous_scale=["#ffffff", colors["청록"]],
-                                    height=250)
+                    fig = px.imshow(
+                        heat_df,
+                        text_auto=".2f",
+                        color_continuous_scale=["#ffffff", "#5B62F6"],
+                        height=250
+                    )
                     fig.update_layout(xaxis_title="요일", yaxis_title="시간")
                     fig.update_yaxes(autorange="reversed")
 
@@ -133,29 +237,65 @@ for i in range(0, len(cards), 3):
                     ).reset_index()
                     fig = px.scatter(
                         agg, x="count", y="fail_rate", size="count", color="fail_rate",
-                        hover_name="mold_code", labels={"count": "생산건수", "fail_rate": "불량률"},
-                        color_continuous_scale=[[0, "white"], [1, "#A3A0FB"]],
+                        hover_name="mold_code",
+                        labels={"count": "생산건수", "fail_rate": "불량률"},
+                        color_continuous_scale=[[0, "#BACBFA"], [1, "#444EED"]],
                         height=250
                     )
 
-
                 elif card["key"] == "trend":
                     data = filtered_df.resample("D", on="datetime")["passorfail"].mean().reset_index()
-                    fig = px.line(data, x="datetime", y="passorfail", markers=True,
-                                  color_discrete_sequence=[colors["자주"]], height=250)
+                    fig = px.line(
+                        data,
+                        x="datetime",
+                        y="passorfail",
+                        markers=True,
+                        color_discrete_sequence=["#B66EEB"],
+                        height=250
+                    )
 
                 elif card["key"] == "distribution":
                     numeric_cols = filtered_df.select_dtypes(include="number").columns
                     numeric_cols = [col for col in numeric_cols if col not in ["passorfail", "hour", "id"]]
-                    var = st.selectbox("변수 선택", numeric_cols, key=f"select_{card['key']}")
-                    fig = px.histogram(
-                        filtered_df,
-                        x=var,
-                        color=filtered_df["passorfail"].map({0: "양품", 1: "불량"}),
-                        color_discrete_map={"양품": colors["노랑"], "불량": colors["자주"]},
-                        barmode="overlay", nbins=40,
-                        labels={"color": "불량 여부"},
-                        height=250
+                    default_var = numeric_cols[0] if numeric_cols else None
+                    var = st.session_state.get(f"select_{card['key']}", default_var)
+
+                    good = filtered_df[filtered_df["passorfail"] == 0]
+                    bad = filtered_df[filtered_df["passorfail"] == 1]
+
+                    fig = go.Figure()
+                    fig.add_trace(go.Histogram(
+                        x=good[var],
+                        name="양품",
+                        marker_color="rgba(146,180,225,0.5)",
+                        nbinsx=40,
+                        opacity=0.5
+                    ))
+                    fig.add_trace(go.Histogram(
+                        x=bad[var],
+                        name="불량",
+                        marker_color="#6EA7E8",
+                        nbinsx=40,
+                        opacity=1.0
+                    ))
+                    fig.update_layout(
+                        barmode='overlay',
+                        height=250,
+                        legend_title_text="불량 여부",
+                        xaxis_title=var,
+                        yaxis_title="빈도"
                     )
 
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                # 그래프 출력
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True, key=f"chart_{card['key']}")
+
+                # 분포 카드만 하단에 selectbox
+                if card["key"] == "distribution":
+                    var = st.selectbox("변수 선택", numeric_cols, key=f"select_{card['key']}")
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+

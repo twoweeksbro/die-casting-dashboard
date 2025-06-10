@@ -508,3 +508,45 @@ with open("xgb_pipeline_model.pkl", "wb") as f:
     pickle.dump(pipeline, f)
 
 print("✅ 모델이 'xgb_pipeline_model.pkl'로 저장되었습니다.")
+
+
+
+
+df = pd.read_csv('./data/train.csv')
+
+alias = {
+        "id": "ID",
+        "line": "라인",
+        "name": "이름",
+        "mold_name": "금형 이름",
+        "time": "시간",
+        "date": "날짜",
+        "count": "생산 수량",
+        "working": "작동 여부",
+        "emergency_stop": "비상정지",
+        "molten_temp": "용탕 온도",
+        "facility_operation_cycleTime": "설비 운영 주기",
+        "production_cycletime": "생산 주기",
+        "low_section_speed": "저속 구간 속도",
+        "high_section_speed": "고속 구간 속도",
+        "molten_volume": "용탕 체적",
+        "cast_pressure": "주조 압력",
+        "biscuit_thickness": "비스킷 두께",
+        "upper_mold_temp1": "상부 금형 온도1",
+        "upper_mold_temp2": "상부 금형 온도2",
+        "upper_mold_temp3": "상부 금형 온도3",
+        "lower_mold_temp1": "하부 금형 온도1",
+        "lower_mold_temp2": "하부 금형 온도2",
+        "lower_mold_temp3": "하부 금형 온도3",
+        "sleeve_temperature": "슬리브 온도",
+        "physical_strength": "물리적 강도",
+        "Coolant_temperature": "냉각수 온도",
+        "EMS_operation_time": "EMS 작동 시간",
+        "registration_time": "등록 시간",
+        "passorfail": "불량 여부",
+        "tryshot_signal": "시도 신호",
+        "mold_code": "몰드 코드",
+        "heating_furnace": "히팅로 작동 여부"
+    }
+df = df.rename(columns=alias)
+df.to_csv('./data/train_kr.csv', index=False)
