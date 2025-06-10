@@ -297,7 +297,7 @@ def render_dashboard(current_df):
     st.subheader('불량 예측')
     
     # col1, col2, col3 = st.columns([1,1,2])
-    col1, col2= st.columns([1,2])
+    col1, col2= st.columns([1,1])
 
     # RF model
     # y_pred = model.predict(current_df.iloc[[-1]].drop(columns=['id', 'passorfail', 'datetime']))[0]
