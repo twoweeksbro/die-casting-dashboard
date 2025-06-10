@@ -176,7 +176,7 @@ def main():
         ]
         if selected_ids:
             filtered = filtered[filtered['id'].isin(selected_ids)]
-        show_cols = ['ID', '등록 시간', '몰드 코드', '히팅로 작동 여부']
+        show_cols = ['ID', '등록 시간', '몰드 코드', '가열로']
         page_size = 15
         total_pages = max(1, math.ceil(len(filtered) / page_size))
         display_df = filtered[show_cols].reset_index(drop=True)
